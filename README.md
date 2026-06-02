@@ -12,10 +12,17 @@ Usage
 -----
 I noticed differences between what the Resideo displays on screen and the values received from the cht8305 sensor, converted according the the specs. The sensor should is calibrated during manufacturing so the received values should be correct. However the casing may effect the values and this may have been adjusted by Resideo (Honewell) in the firmware. You can use the offset values using the standard filters of esphome to match the values with what's displayed on screen.
 
+The `cm1106_sniffer` component is a proper ESPHome `uart::UARTDevice`. You must declare a `uart:` block and configure the RX pin that is connected to the CM1106 data line.
+
 ```yaml
 external_components:
   - source: github://Pluimvee/esphome-resideo
     components: [cht8305_sniffer, cm1106_sniffer]
+
+# ESP8266: UART0 RX is GPIO3. On ESP32 any RX-capable pin can be used.
+uart:
+  baud_rate: 9600
+  rx_pin: GPIO3
 
 sensor:
   - platform: cht8305_sniffer
@@ -31,19 +38,32 @@ sensor:
         - offset: 2.1  # Adjust humidity offset if needed
 
   - platform: cm1106_sniffer
-    # update_interval: 10s default 5s
+    # update_interval: 10s  (default 5s)
+    name: "CO2 Level"
+```
+
+If your board has multiple UARTs, pass the `uart_id` explicitly:
+
+```yaml
+uart:
+  id: co2_uart
+  baud_rate: 9600
+  rx_pin: GPIO16
+
+sensor:
+  - platform: cm1106_sniffer
+    uart_id: co2_uart
     name: "CO2 Level"
 ```
 
 NOTE
 -----
-Be sure to disable the use of the UART by the logger, by setting baudrate to 0. The UART is needed to receive messages from the cm1106 sensor
+Be sure to disable the use of UART0 by the logger by setting `baud_rate: 0`. This releases the hardware serial port so it can be used by the `uart:` component.
 
-``` yaml
-# Enable logging
+```yaml
 logger:
-  level: DEBUG  
-  baud_rate: 0  # Disable logging on UART (as we need the UART)
+  level: INFO
+  baud_rate: 0  # release UART0 for cm1106_sniffer
 ```
 
 # Hardware
